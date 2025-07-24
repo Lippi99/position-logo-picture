@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Posicionar multi imagens</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f9;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+    }
+    #container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      justify-content: center;
+    }
+    .image-container {
+      position: relative;
+      display: inline-block;
+      border: 2px solid #333;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      background-color: #fff;
+      min-height: 100px;
+      min-width: 300px;
+      overflow: visible;
+    }
+    .background-img {
+      max-width: 300px;
+      width: 100%;
+      display: block;
+    }
+    .logo-img {
+      position: absolute;
+      cursor: move;
+      left: 0;
+      top: 0;
+      z-index: 10;
+      visibility: visible;
+    }
+    .image-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .remove-btn {
+      background-color: #ff4444;
+      color: #fff;
+      border: none;
+      border-radius: 3px;
+      padding: 8px 16px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .remove-btn:hover {
+      background-color: #cc0000;
+    }
+    #buttons {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-top: 25px;
+    }
+    button {
+      padding: 12px 24px;
+      font-size: 16px;
+      color: #fff;
+      background-color: #007bff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    button:active {
+      background-color: #004085;
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+    input[type="file"] {
+      margin-bottom: 20px;
+    }
+    #container:empty::before {
+      content: 'Por favor faça o upload de uma ou mais imagens (max 5, 20MB total)';
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100px;
+      color: #666;
+      font-size: 16px;
+      width: 100%;
+    }
+    #download-links {
+      margin-top: 20px;
+      text-align: center;
+    }
+    #download-links a {
+      display: inline-block;
+      margin: 5px;
+      padding: 8px 16px;
+      background-color: #28a745;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 3px;
+      font-size: 14px;
+    }
+    #download-links a:hover {
+      background-color: #218838;
+    }
+  </style>
+</head>
+<body>
+  <h1>Posicione a logo em múltiplas imagens</h1>
+  <input type="file" id="imageUpload" accept="image/*" multiple>
+  <div id="container"></div>
+
+  <div id="buttons">
+    <button onclick="positionTopLeft()">Superior esquerdo</button>
+    <button onclick="positionTopRight()">Superior direito</button>
+    <button onclick="positionBottomLeft()">Inferior esquedo</button>
+    <button onclick="positionBottomRight()">Inferior direito</button>
+    <button onclick="savePosition()">Gerar</button>
+  </div>
+  <div id="download-links"></div>
+
+  <script>
+    let offset = { x: 0, y: 0 }, isDragging = false;
+    let uploadedImages = [];
+    let globalLogoPosition = { leftPercent: 0, topPercent: 0 };
+
+    // Handle image upload
+    document.getElementById('imageUpload').addEventListener('change', (e) => {
+      const files = Array.from(e.target.files);
+      if (!files.length) {
+        console.log('No files selected');
+        removeAllImages();
+        return;
+      }
+
+      // Validate number and size of files
+      if (files.length > 5) {
+        alert('Máximo de 5 imagens permitidas.');
+        e.target.value = '';
+        return;
+      }
+      const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+      if (totalSize > 20 * 1024 * 1024) {
+        alert('Número total de arquivos é de no máximo 20MB');
+        e.target.value = '';
+        return;
+      }
+      uploadedImages = [];
+      const container = document.getElementById('container');
+      container.innerHTML = '';
+      document.getElementById('download-links').innerHTML = ''; // Clear previous download links
+
+      files.forEach((file, index) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const dataUrl = event.target.result;
+          uploadedImages.push({ dataUrl, id: `img-${index}` });
+
+          // Create image wrapper
+          const imageWrapper = document.createElement('div');
+          imageWrapper.className = 'image-wrapper';
+          imageWrapper.id = `wrapper-${index}`;
+
+          // Create image container
+          const imageContainer = document.createElement('div');
+          imageContainer.className = 'image-container';
+          imageContainer.id = `container-${index}`;
+
+          // Create background image
+          const bgImg = document.createElement('img');
+          bgImg.className = 'background-img';
+          bgImg.src = dataUrl;
+          bgImg.alt = `Background Image ${index + 1}`;
+
+          // Create logo image
+          const logoImg = document.createElement('img');
+          logoImg.className = 'logo-img';
+          logoImg.id = `logo-${index}`;
+          logoImg.style.width = '75px';
+          logoImg.src = 'logo_white.svg';
+          logoImg.alt = 'Logo';
+
+          // Apply initial position based on percentages
+          bgImg.addEventListener('load', () => {
+            const containerWidth = bgImg.clientWidth || 300;
+            const containerHeight = bgImg.clientHeight || 100;
+            logoImg.style.left = `${globalLogoPosition.leftPercent * containerWidth}px`;
+            logoImg.style.top = `${globalLogoPosition.topPercent * containerHeight}px`;
+          });
+
+          // Create remove button
+          const removeBtn = document.createElement('button');
+          removeBtn.className = 'remove-btn';
+          removeBtn.textContent = 'Remover';
+          removeBtn.onclick = () => removeImage(index);
+
+          // Add drag functionality to logo
+          logoImg.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            offset.x = e.offsetX;
+            offset.y = e.offsetY;
+          });
+
+          imageContainer.appendChild(bgImg);
+          imageContainer.appendChild(logoImg);
+          imageWrapper.appendChild(imageContainer);
+          imageWrapper.appendChild(removeBtn);
+          container.appendChild(imageWrapper);
+        };
+        reader.onerror = (error) => {
+          console.error('FileReader error for file', file.name, ':', error);
+          alert(`Erro ao ler o arquivo ${file.name}`);
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+
+    // Remove image
+    function removeImage(index) {
+      uploadedImages = uploadedImages.filter(img => img.id !== `img-${index}`);
+      const wrapper = document.getElementById(`wrapper-${index}`);
+      if (wrapper) wrapper.remove();
+      if (!uploadedImages.length) {
+        document.getElementById('container').innerHTML = '';
+        document.getElementById('download-links').innerHTML = '';
+      }
+    }
+
+    // Dragging functionality
+    document.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      const logos = document.querySelectorAll('.logo-img');
+      if (logos.length === 0) {
+        return;
+      }
+      const firstLogo = logos[0];
+      const firstContainer = firstLogo.parentElement;
+      if (!firstContainer) {
+        return;
+      }
+      const firstBgImg = firstLogo.previousElementSibling;
+      if (!firstBgImg) {
+        return;
+      }
+      const rect = firstContainer.getBoundingClientRect();
+      const containerWidth = firstBgImg.clientWidth || 300;
+      const containerHeight = firstBgImg.clientHeight || 100;
+      const logoWidth = firstLogo.clientWidth;
+      const logoHeight = firstLogo.clientHeight;
+
+      // Calculate position for the dragged logo
+      let x = e.clientX - rect.left - offset.x;
+      let y = e.clientY - rect.top - offset.y;
+      x = Math.max(0, Math.min(x, containerWidth - logoWidth));
+      y = Math.max(0, Math.min(y, containerHeight - logoHeight));
+
+      // Store position as percentages
+      globalLogoPosition = {
+        leftPercent: x / containerWidth,
+        topPercent: y / containerHeight
+      };
+
+      // Update all logos
+      logos.forEach(logo => {
+        const container = logo.parentElement;
+        if (!container) {
+          return;
+        }
+        const bgImg = logo.previousElementSibling;
+        if (!bgImg) {
+          return;
+        }
+        const currentWidth = bgImg.clientWidth || 300;
+        const currentHeight = bgImg.clientHeight || 100;
+        const newX = globalLogoPosition.leftPercent * currentWidth;
+        const newY = globalLogoPosition.topPercent * currentHeight;
+        logo.style.left = `${newX}px`;
+        logo.style.top = `${newY}px`;
+        logo.style.visibility = 'visible';
+      });
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (isDragging) {
+        console.log('Dragging stopped, final position:', globalLogoPosition);
+      }
+      isDragging = false;
+    });
+
+    // Positioning functions
+    function positionTopLeft() {
+      const logos = document.querySelectorAll('.logo-img');
+      globalLogoPosition = { leftPercent: 0, topPercent: 0 };
+      logos.forEach(logo => {
+        logo.style.left = '0px';
+        logo.style.top = '0px';
+        logo.style.visibility = 'visible';
+      });
+      console.log('Positioned all logos to Top-Left');
+    }
+
+    function positionTopRight() {
+      const logos = document.querySelectorAll('.logo-img');
+      logos.forEach(logo => {
+        const bg = logo.previousElementSibling;
+        const containerWidth = bg.clientWidth || 300;
+        const logoWidth = logo.clientWidth;
+        logo.style.left = `${containerWidth - logoWidth}px`;
+        logo.style.top = '0px';
+        logo.style.visibility = 'visible';
+        globalLogoPosition = { leftPercent: (containerWidth - logoWidth) / containerWidth, topPercent: 0 };
+      });
+      console.log('Positioned all logos to Top-Right');
+    }
+
+    function positionBottomLeft() {
+      const logos = document.querySelectorAll('.logo-img');
+      logos.forEach(logo => {
+        const bg = logo.previousElementSibling;
+        const containerHeight = bg.clientHeight || 100;
+        const logoHeight = logo.clientHeight;
+        logo.style.left = '0px';
+        logo.style.top = `${containerHeight - logoHeight}px`;
+        logo.style.visibility = 'visible';
+        globalLogoPosition = { leftPercent: 0, topPercent: (containerHeight - logoHeight) / containerHeight };
+      });
+      console.log('Positioned all logos to Bottom-Left');
+    }
+
+    function positionBottomRight() {
+      const logos = document.querySelectorAll('.logo-img');
+      logos.forEach(logo => {
+        const bg = logo.previousElementSibling;
+        const containerWidth = bg.clientWidth || 300;
+        const containerHeight = bg.clientHeight || 100;
+        const logoWidth = logo.clientWidth;
+        const logoHeight = logo.clientHeight;
+        logo.style.left = `${containerWidth - logoWidth}px`;
+        logo.style.top = `${containerHeight - logoHeight}px`;
+        logo.style.visibility = 'visible';
+        globalLogoPosition = {
+          leftPercent: (containerWidth - logoWidth) / containerWidth,
+          topPercent: (containerHeight - logoHeight) / containerHeight
+        };
+      });
+      console.log('Positioned all logos to Bottom-Right');
+    }
+
+    // Clear images
+    function removeAllImages() {
+      uploadedImages = [];
+      document.getElementById('container').innerHTML = '';
+      document.getElementById('download-links').innerHTML = '';
+      globalLogoPosition = { leftPercent: 0, topPercent: 0 };
+      console.log('All images cleared');
+    }
+
+    // Save position and send image data
+    async function savePosition() {
+      if (!uploadedImages.length) {
+        alert('Selecione ao menos uma imagem antes de gerar');
+        return;
+      }
+
+      const logos = document.querySelectorAll('.logo-img');
+      if (!logos.length) {
+        console.warn('No logos found for saving');
+        return;
+      }
+
+      const logo = logos[0];
+      const logoStyle = window.getComputedStyle(logo);
+      const left = parseInt(logoStyle.left, 10) || 0;
+      const top = parseInt(logoStyle.top, 10) || 0;
+      const logoWidth = logo.clientWidth;
+      const bg = logo.previousElementSibling;
+
+      const payload = {
+        left,
+        top,
+        screenWidth: bg.clientWidth || 300,
+        screenHeight: bg.clientHeight || 100,
+        logoWidth,
+        images: uploadedImages.map(img => img.dataUrl)
+      };
+
+      console.log('Saving position with payload:', { left, top, screenWidth: payload.screenWidth, screenHeight: payload.screenHeight, imageCount: payload.images.length });
+
+      try {
+        const response = await fetch('/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (response.ok) {
+          const result = await response.json();
+          alert('Imagens geradas com sucesso!');
+
+          // Create download links
+          const downloadContainer = document.getElementById('download-links');
+          downloadContainer.innerHTML = ''; // Clear previous links
+
+          // Individual image links
+          result.files.forEach((file, index) => {
+            const link = document.createElement('a');
+            link.href = file.replace('./public', ''); // Adjust path for browser access
+            link.download = `generated_image_${index + 1}.webp`;
+            link.textContent = `Download imagem ${index + 1}`;
+            downloadContainer.appendChild(link);
+          });
+
+          // ZIP file link
+          if (result.zipFile) {
+            const zipLink = document.createElement('a');
+            zipLink.href = result.zipFile.replace('./public', '');
+            zipLink.download = `generated_images.zip`;
+            zipLink.textContent = 'Download Zip das fotos geradas';
+            downloadContainer.appendChild(zipLink);
+          }
+
+          console.log('Download links created:', { files: result.files, zipFile: result.zipFile });
+        } else {
+          const errorText = await response.text();
+          console.error('Server error:', errorText);
+          alert('Falha ao gerar as imagens ' + errorText);
+        }
+      } catch (error) {
+        console.error('Fetch error:', error);
+        alert('Houve um erro ao gerar as imagens: ' + error.message);
+      }
+    }
+  </script>
+</body>
+</html>
