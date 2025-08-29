@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  
+  <!-- Main page -->
+  <url>
+    <loc>https://yoursite.com/</loc>
+    <lastmod>2024-01-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    
+    <!-- Image for the watermarking tool -->
+    <image:image>
+      <image:loc>https://yoursite.com/preview-image.jpg</image:loc>
+      <image:caption>Free Online Image Watermarking Tool - Add professional watermarks to your images</image:caption>
+      <image:title>Image Watermarking Tool Preview</image:title>
+    </image:image>
+    
+    <image:image>
+      <image:loc>https://yoursite.com/screenshot.jpg</image:loc>
+      <image:caption>Screenshot of the watermarking tool interface showing drag and drop functionality</image:caption>
+      <image:title>Watermarking Tool Interface</image:title>
+    </image:image>
+  </url>
+  
+  <!-- Add additional pages here as your site grows -->
+  <!-- Example:
+  <url>
+    <loc>https://yoursite.com/help</loc>
+    <lastmod>2024-01-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  
+  <url>
+    <loc>https://yoursite.com/privacy</loc>
+    <lastmod>2024-01-01</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://yoursite.com/terms</loc>
+    <lastmod>2024-01-01</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  -->
+  
+</urlset>
