@@ -14,7 +14,7 @@ A simple web application built with **Node.js** and **Express** to dynamically a
 
 ## 🛠 Tech Stack
 - **Backend**: Node.js, Express.js  
-- **Image Processing**: [sharp.js](https://sharp.pixelplumbing.com/) (or your library of choice)  
+- **Image Processing**: [sharp.js](https://sharp.pixelplumbing.com/)
 - **File Uploads**: Multer  
 
 ---
