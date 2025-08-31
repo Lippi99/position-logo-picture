@@ -4,6 +4,11 @@ import bodyParser from "body-parser";
 import archiver from "archiver";
 import multer from "multer";
 import sharp from "sharp";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(bodyParser.json({ limit: "50mb" }));
@@ -11,7 +16,7 @@ app.use(express.static("public"));
 
 // Add explicit root route for Vercel
 app.get("/", (req, res) => {
-  res.sendFile("index.html", { root: "public" });
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 // Configure multer for file uploads
