@@ -9,6 +9,11 @@ const app = express();
 app.use(bodyParser.json({ limit: "50mb" }));
 app.use(express.static("public"));
 
+// Add explicit root route for Vercel
+app.get("/", (req, res) => {
+  res.sendFile("index.html", { root: "public" });
+});
+
 // Configure multer for file uploads
 const storage = multer.memoryStorage();
 const upload = multer({
