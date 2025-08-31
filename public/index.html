@@ -40,6 +40,9 @@
   <!-- Canonical URL -->
   <link rel="canonical" href="https://yoursite.com/">
   
+  <!-- JSZip Library for ZIP file creation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  
   <!-- Structured Data -->
   <script type="application/ld+json">
   {
@@ -235,7 +238,8 @@
     .image-preview {
       position: relative;
       display: inline-block;
-      max-width: 120px;
+      max-width: 200px;
+      width: 100%;
       border-radius: 5px;
       overflow: hidden;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -243,7 +247,7 @@
     
     .image-preview img {
       width: 100%;
-      height: 80px;
+      height: 200px;
       object-fit: cover;
       display: block;
     }
@@ -566,6 +570,11 @@
       <!-- Results -->
       <section id="results" class="results" aria-label="Generated images">
         <h2>✅ Generated Images</h2>
+        <div class="results-header">
+          <button class="btn btn-success" onclick="downloadAllAsZip()" id="zipBtn" style="display: none; margin-bottom: 20px;">
+            📦 Download All as ZIP
+          </button>
+        </div>
         <div id="downloadGrid" class="download-grid" aria-live="polite"></div>
       </section>
       
@@ -597,6 +606,7 @@
     let customPosition = null; // For drag positioning
     let isDragging = false;
     let dragOffset = { x: 0, y: 0 };
+    let processedImages = []; // Store processed image blobs for ZIP download
     
     // Position coordinates mapping
     const positionMap = {
@@ -885,6 +895,7 @@
     async function processImages(imagesToProcess) {
       showLoading('Processing images...');
       document.getElementById('results').style.display = 'none';
+      processedImages = []; // Reset processed images array
       
       try {
         const downloadGrid = document.getElementById('downloadGrid');
@@ -916,6 +927,12 @@
             const blob = await response.blob();
             const imageUrl = URL.createObjectURL(blob);
             
+            // Store processed image for ZIP download
+            processedImages.push({
+              blob: blob,
+              filename: `watermarked-${i + 1}.png`
+            });
+            
             // Create download item
             const item = document.createElement('div');
             item.className = 'download-item';
@@ -942,9 +959,56 @@
         document.getElementById('errorContainer').innerHTML = '';
         document.getElementById('results').style.display = 'block';
         
+        // Show ZIP download button if multiple images were processed
+        const zipBtn = document.getElementById('zipBtn');
+        if (processedImages.length > 1) {
+          zipBtn.style.display = 'inline-block';
+        } else {
+          zipBtn.style.display = 'none';
+        }
+        
       } catch (error) {
         showError(`Error: ${error.message}`);
         console.error('Processing error:', error);
+      }
+    }
+    
+    // Download all processed images as ZIP
+    async function downloadAllAsZip() {
+      if (processedImages.length === 0) {
+        showError('No processed images available for ZIP download');
+        return;
+      }
+      
+      try {
+        showLoading('Creating ZIP file...');
+        
+        const zip = new JSZip();
+        
+        // Add all processed images to ZIP
+        for (const imageData of processedImages) {
+          zip.file(imageData.filename, imageData.blob);
+        }
+        
+        // Generate ZIP file
+        const zipBlob = await zip.generateAsync({type: 'blob'});
+        
+        // Create download link
+        const zipUrl = URL.createObjectURL(zipBlob);
+        const link = document.createElement('a');
+        link.href = zipUrl;
+        link.download = 'watermarked-images.zip';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Clean up
+        URL.revokeObjectURL(zipUrl);
+        document.getElementById('errorContainer').innerHTML = '';
+        
+      } catch (error) {
+        showError(`Error creating ZIP: ${error.message}`);
+        console.error('ZIP creation error:', error);
       }
     }
     
